@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#dc2626" />
+  <title>RARA · X Checker</title>
+  <style>
+    :root {
+      --bg: #0b0c10;
+      --card: #16181f;
+      --line: #2a2e3a;
+      --red: #dc2626;
+      --red2: #ff4d4d;
+      --amber: #f59e0b;
+      --green: #34d399;
+      --text: #f4f6f8;
+      --muted: #9aa3b2;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+    }
+    header {
+      background: var(--red);
+      padding: 18px 16px calc(14px + env(safe-area-inset-top));
+      text-align: center;
+    }
+    header h1 { margin: 0; font-size: 34px; letter-spacing: .12em; }
+    header .sub { margin: 6px 0 0; font-size: 13px; opacity: .95; }
+    header .made { margin-top: 8px; font-size: 14px; font-weight: 800; }
+    header a { color: #fff; }
+    main { padding: 16px; max-width: 720px; margin: 0 auto; }
+    .tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+    .tabs button {
+      flex: 1; border: 1px solid var(--line); background: var(--card);
+      color: var(--text); border-radius: 999px; padding: 10px; font-weight: 700;
+    }
+    .tabs button.on { background: #fff; color: #111; }
+    label { display: block; font-size: 13px; color: var(--muted); margin: 0 0 8px; }
+    .row { display: flex; gap: 8px; }
+    input {
+      flex: 1; background: var(--card); border: 1px solid var(--line); color: var(--text);
+      border-radius: 14px; padding: 14px; font-size: 16px;
+    }
+    button.go {
+      border: 0; background: var(--red); color: #fff; font-weight: 800;
+      border-radius: 14px; padding: 14px 16px; font-size: 16px;
+    }
+    .card {
+      background: var(--card); border: 1px solid var(--line);
+      border-radius: 18px; padding: 16px; margin-top: 14px;
+    }
+    .who { display: flex; gap: 12px; align-items: center; }
+    .who img { width: 64px; height: 64px; border-radius: 50%; background: #222; }
+    .handle { color: var(--amber); font-weight: 800; }
+    .idbox {
+      margin-top: 12px; background: #2a1010; border: 1px solid var(--red);
+      border-radius: 12px; padding: 10px 12px; font-family: ui-monospace, monospace;
+      font-size: 13px; word-break: break-all;
+    }
+    .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 12px; }
+    .stat { background: #0f1116; border-radius: 12px; padding: 10px; text-align: center; }
+    .stat b { display: block; font-size: 18px; }
+    .stat span { color: var(--muted); font-size: 11px; }
+    .bio { color: #d5dbe6; font-size: 14px; margin-top: 10px; white-space: pre-wrap; }
+    a.btn, button.btn {
+      display: block; text-align: center; margin-top: 10px; padding: 12px;
+      background: #fff; color: #111; text-decoration: none; border-radius: 12px; font-weight: 800;
+      width: 100%; border: 0; font-size: 15px;
+    }
+    .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
+    .actions a { margin-top: 0; }
+    .follow { background: #fff; color: #111; }
+    .donate { background: #111; color: #fff; border: 1px solid #fff; }
+    .ok { color: var(--green); font-weight: 800; }
+    .bad { color: var(--red2); font-weight: 800; }
+    .muted { color: var(--muted); }
+    .quick { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .quick button {
+      background: #0f1116; color: var(--text); border: 1px solid var(--line);
+      border-radius: 999px; padding: 8px 12px;
+    }
+    .err { background: #3a1212; border: 1px solid var(--red); color: #fecaca;
+      padding: 12px; border-radius: 12px; margin-top: 12px; }
+    footer { color: var(--muted); font-size: 12px; padding: 24px 8px 40px; line-height: 1.5; text-align: center; }
+    .hidden { display: none !important; }
+    .name-row {
+      display: flex; justify-content: space-between; gap: 8px;
+      padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 15px;
+    }
+    #gate {
+      position: fixed; inset: 0; background: #0b0c10; z-index: 50;
+      display: flex; align-items: center; justify-content: center; padding: 24px;
+    }
+    .gatebox { width: 100%; max-width: 420px; text-align: center; }
+    .gatebox h2 { margin: 0; font-size: 48px; letter-spacing: .14em; }
+    .gatebox p { color: var(--muted); }
+    .gatebox .big {
+      background: var(--red); color: #fff; margin-top: 18px;
+    }
+    .gatebox .next { background: #fff; color: #111; }
+    .gatebox .next:disabled { opacity: .35; }
+  </style>
+</head>
+<body>
+  <div id="gate">
+    <div class="gatebox">
+      <h2>RARA</h2>
+      <p class="made" style="color:#fff;font-weight:800">Made by RARA · @ragurammon</p>
+      <p>Follow on X first. Then you can use the checker.</p>
+      <a class="btn big" id="followBtn" href="https://x.com/intent/follow?screen_name=ragurammon" target="_blank" rel="noopener">1. Follow @ragurammon</a>
+      <button class="btn next" id="unlockBtn" type="button" disabled>2. Follow first to unlock</button>
+    </div>
+  </div>
+
+  <header>
+    <h1>RARA</h1>
+    <div class="sub">X username + deleted tweet checker</div>
+    <div class="made">Made by RARA · <a href="https://x.com/ragurammon" target="_blank" rel="noopener">@ragurammon</a></div>
+  </header>
+  <main>
+    <div class="tabs">
+      <button class="on" id="tabUser" type="button">Username</button>
+      <button id="tabTweet" type="button">Tweet ID</button>
+    </div>
+
+    <section id="userBox">
+      <label>X username or numeric ID</label>
+      <div class="row">
+        <input id="q" placeholder="zecagent or 2087094262349365248" autocomplete="off" />
+        <button class="go" id="goUser" type="button">Check</button>
+      </div>
+      <div class="quick">
+        <button type="button" data-q="zecagent">@zecagent</button>
+        <button type="button" data-q="gog_gz">@gog_gz</button>
+      </div>
+      <div id="userOut"></div>
+    </section>
+
+    <section id="tweetBox" class="hidden">
+      <label>Tweet link or tweet ID</label>
+      <div class="row">
+        <input id="tid" placeholder="https://x.com/user/status/2099..." autocomplete="off" />
+        <button class="go" id="goTweet" type="button">Check</button>
+      </div>
+      <div id="tweetOut"></div>
+    </section>
+
+    <div class="card" style="margin-top:16px">
+      <b>Made by RARA</b>
+      <p class="muted" style="margin:8px 0 0">Follow @ragurammon. Donations keep this tool online.</p>
+      <div class="actions">
+        <a class="btn follow" href="https://x.com/intent/follow?screen_name=ragurammon" target="_blank" rel="noopener">Follow on X</a>
+        <a class="btn donate" href="https://x.com/ragurammon" target="_blank" rel="noopener">Donate / DM wallet</a>
+      </div>
+    </div>
+
+    <footer>Made by RARA · @ragurammon. Public checker, not financial advice.</footer>
+  </main>
+  <script>
+    const FOLLOW = "https://x.com/intent/follow?screen_name=ragurammon";
+    const $ = (id) => document.getElementById(id);
+    const userBox = $("userBox"), tweetBox = $("tweetBox");
+
+    $("followBtn").addEventListener("click", () => {
+      sessionStorage.setItem("rara_follow_clicked", "1");
+      const b = $("unlockBtn");
+      b.disabled = false;
+      b.textContent = "2. I followed — open checker";
+    });
+    $("unlockBtn").addEventListener("click", () => {
+      if (sessionStorage.getItem("rara_follow_clicked") !== "1") return;
+      sessionStorage.setItem("rara_unlocked", "1");
+      $("gate").classList.add("hidden");
+    });
+    if (sessionStorage.getItem("rara_unlocked") === "1") {
+      $("gate").classList.add("hidden");
+    } else if (sessionStorage.getItem("rara_follow_clicked") === "1") {
+      const b = $("unlockBtn");
+      b.disabled = false;
+      b.textContent = "2. I followed — open checker";
+    }
+
+    $("tabUser").onclick = () => {
+      $("tabUser").classList.add("on"); $("tabTweet").classList.remove("on");
+      userBox.classList.remove("hidden"); tweetBox.classList.add("hidden");
+    };
+    $("tabTweet").onclick = () => {
+      $("tabTweet").classList.add("on"); $("tabUser").classList.remove("on");
+      tweetBox.classList.remove("hidden"); userBox.classList.add("hidden");
+    };
+    document.querySelectorAll("[data-q]").forEach((b) => {
+      b.onclick = () => { $("q").value = b.dataset.q; checkUser(); };
+    });
+    $("goUser").onclick = checkUser;
+    $("q").addEventListener("keydown", (e) => { if (e.key === "Enter") checkUser(); });
+    $("goTweet").onclick = checkTweet;
+    $("tid").addEventListener("keydown", (e) => { if (e.key === "Enter") checkTweet(); });
+
+    function esc(s) {
+      return String(s || "").replace(/[&<>"']/g, (c) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+      }[c]));
+    }
+    async function checkUser() {
+      const q = $("q").value.trim().replace(/^@/, "");
+      const out = $("userOut");
+      if (!q) { out.innerHTML = '<div class="err">Type a username first.</div>'; return; }
+      out.innerHTML = '<div class="card muted">Checking…</div>';
+      try {
+        const r = await fetch("/api/lookup?q=" + encodeURIComponent(q));
+        const data = await r.json();
+        if (!r.ok) { out.innerHTML = '<div class="err">' + esc(data.error || "Not found") + "</div>"; return; }
+        const p = data.profile;
+        let html = "";
+        if (p) {
+          html += '<div class="card"><div class="who">';
+          html += '<img src="' + esc(p.avatar) + '" alt="" />';
+          html += "<div><div>" + esc(p.name) + (p.verified ? " ✓" : "") + "</div>";
+          html += '<div class="handle">@' + esc(p.handle) + "</div>";
+          html += '<div class="muted">Joined ' + esc(p.joined) + "</div></div></div>";
+          html += '<div class="idbox">USER ID (never changes)<br>' + esc(p.user_id) + "</div>";
+          html += '<div class="stats"><div class="stat"><b>' + p.tweets + "</b><span>tweets</span></div>";
+          html += '<div class="stat"><b>' + p.followers + "</b><span>followers</span></div>";
+          html += '<div class="stat"><b>' + p.following + "</b><span>following</span></div></div>";
+          if (p.bio) html += '<div class="bio">' + esc(p.bio) + "</div>";
+          html += '<a class="btn" href="' + esc(data.stable_url) + '">Open stable ID link</a>';
+          html += '<a class="btn" style="background:#222;color:#fff;margin-top:8px" href="https://x.com/' + esc(p.handle) + '">Open current profile</a></div>';
+        }
+        html += '<div class="card"><b>Old usernames</b>';
+        if (!data.history.length) {
+          html += '<p class="muted">No public archive yet. Save the User ID above.</p>';
+        } else {
+          data.history.forEach((h) => {
+            html += '<div class="name-row"><span>@' + esc(h.handle) + "</span><span class='muted'>" + esc((h.dates || []).join(" → ")) + "</span></div>";
+          });
+        }
+        html += "</div>";
+        out.innerHTML = html;
+      } catch (e) {
+        out.innerHTML = '<div class="err">Network error. Deploy to Vercel first, then retry.</div>';
+      }
+    }
+    function parseTweetId(raw) {
+      const s = raw.trim();
+      const m = s.match(/status\/(\d+)/) || s.match(/^(\d{5,25})$/);
+      return m ? m[1] : "";
+    }
+    async function checkTweet() {
+      const id = parseTweetId($("tid").value);
+      const out = $("tweetOut");
+      if (!id) { out.innerHTML = '<div class="err">Paste a tweet link or ID.</div>'; return; }
+      out.innerHTML = '<div class="card muted">Checking…</div>';
+      try {
+        const r = await fetch("/api/tweet?id=" + encodeURIComponent(id));
+        const data = await r.json();
+        if (data.live) {
+          out.innerHTML = '<div class="card"><div class="ok">LIVE</div><div class="handle">@' +
+            esc(data.handle) + '</div><p>' + esc(data.text) + '</p><div class="idbox">TWEET ID ' +
+            esc(data.tweet_id) + '</div><a class="btn" href="' + esc(data.url) + '">Open tweet</a></div>';
+        } else if (data.status === "deleted_or_missing") {
+          out.innerHTML = '<div class="card"><div class="bad">DELETED OR HIDDEN</div><div class="idbox">' + esc(id) + "</div></div>";
+        } else {
+          out.innerHTML = '<div class="err">' + esc(data.error || "Could not check") + "</div>";
+        }
+      } catch (e) {
+        out.innerHTML = '<div class="err">Network error. Try again.</div>';
+      }
+    }
+  </script>
+</body>
+</html>
