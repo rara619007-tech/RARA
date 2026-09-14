@@ -100,11 +100,11 @@
     .gatebox { width: 100%; max-width: 420px; text-align: center; }
     .gatebox h2 { margin: 0; font-size: 48px; letter-spacing: .14em; }
     .gatebox p { color: var(--muted); }
-    .gatebox .big {
-      background: var(--red); color: #fff; margin-top: 18px;
-    }
+    .gatebox .big { background: var(--red); color: #fff; margin-top: 18px; }
     .gatebox .next { background: #fff; color: #111; }
     .gatebox .next:disabled { opacity: .35; }
+    .gatebox input { width: 100%; margin-top: 12px; text-align: left; }
+    .gatebox .hint { font-size: 13px; }
   </style>
 </head>
 <body>
@@ -112,12 +112,14 @@
     <div class="gatebox">
       <h2>RARA</h2>
       <p class="made" style="color:#fff;font-weight:800">Made by RARA · @ragurammon</p>
-      <p>Follow on X first. Then you can use the checker.</p>
+      <p class="hint">Follow + post this tweet to unlock:<br><b style="color:#fff">I follow @ragurammon</b></p>
       <a class="btn big" id="followBtn" href="https://x.com/intent/follow?screen_name=ragurammon" target="_blank" rel="noopener">1. Follow @ragurammon</a>
-      <button class="btn next" id="unlockBtn" type="button" disabled>2. Follow first to unlock</button>
+      <a class="btn next" id="tweetBtn" href="https://x.com/intent/tweet?text=I%20follow%20%40ragurammon" target="_blank" rel="noopener">2. Post the tweet</a>
+      <input id="proof" placeholder="Paste your tweet link" autocomplete="off" />
+      <button class="btn next" id="unlockBtn" type="button">3. Check tweet and open</button>
+      <div id="gateErr" class="err hidden"></div>
     </div>
   </div>
-
   <header>
     <h1>RARA</h1>
     <div class="sub">X username + deleted tweet checker</div>
@@ -128,7 +130,6 @@
       <button class="on" id="tabUser" type="button">Username</button>
       <button id="tabTweet" type="button">Tweet ID</button>
     </div>
-
     <section id="userBox">
       <label>X username or numeric ID</label>
       <div class="row">
@@ -141,7 +142,6 @@
       </div>
       <div id="userOut"></div>
     </section>
-
     <section id="tweetBox" class="hidden">
       <label>Tweet link or tweet ID</label>
       <div class="row">
@@ -150,7 +150,6 @@
       </div>
       <div id="tweetOut"></div>
     </section>
-
     <div class="card" style="margin-top:16px">
       <b>Made by RARA</b>
       <p class="muted" style="margin:8px 0 0">Follow @ragurammon. Donations keep this tool online.</p>
@@ -159,33 +158,42 @@
         <a class="btn donate" href="https://x.com/ragurammon" target="_blank" rel="noopener">Donate / DM wallet</a>
       </div>
     </div>
-
     <footer>Made by RARA · @ragurammon. Public checker, not financial advice.</footer>
   </main>
   <script>
-    const FOLLOW = "https://x.com/intent/follow?screen_name=ragurammon";
     const $ = (id) => document.getElementById(id);
     const userBox = $("userBox"), tweetBox = $("tweetBox");
-
-    $("followBtn").addEventListener("click", () => {
-      sessionStorage.setItem("rara_follow_clicked", "1");
-      const b = $("unlockBtn");
-      b.disabled = false;
-      b.textContent = "2. I followed — open checker";
-    });
-    $("unlockBtn").addEventListener("click", () => {
-      if (sessionStorage.getItem("rara_follow_clicked") !== "1") return;
-      sessionStorage.setItem("rara_unlocked", "1");
-      $("gate").classList.add("hidden");
-    });
-    if (sessionStorage.getItem("rara_unlocked") === "1") {
-      $("gate").classList.add("hidden");
-    } else if (sessionStorage.getItem("rara_follow_clicked") === "1") {
-      const b = $("unlockBtn");
-      b.disabled = false;
-      b.textContent = "2. I followed — open checker";
+    function parseTweetId(raw) {
+      const s = String(raw || "").trim();
+      const m = s.match(/status\/(\d+)/) || s.match(/^(\d{5,25})$/);
+      return m ? m[1] : "";
     }
-
+    $("unlockBtn").addEventListener("click", verifyProof);
+    $("proof").addEventListener("keydown", (e) => { if (e.key === "Enter") verifyProof(); });
+    async function verifyProof() {
+      const err = $("gateErr");
+      const id = parseTweetId($("proof").value);
+      if (!id) { err.classList.remove("hidden"); err.textContent = "Paste your tweet link first."; return; }
+      err.classList.remove("hidden");
+      err.textContent = "Checking tweet…";
+      try {
+        const r = await fetch("/api/tweet?id=" + encodeURIComponent(id));
+        const data = await r.json();
+        const text = String(data.text || "").toLowerCase();
+        const okText = text.includes("ragurammon") && text.includes("follow");
+        if (data.live && okText) {
+          sessionStorage.setItem("rara_unlocked", "1");
+          $("gate").classList.add("hidden");
+        } else if (data.live) {
+          err.textContent = "Tweet is live, but it must say: I follow @ragurammon";
+        } else {
+          err.textContent = "Tweet not found. Post it, then paste the new link.";
+        }
+      } catch (e) {
+        err.textContent = "Could not check tweet. Try again.";
+      }
+    }
+    if (sessionStorage.getItem("rara_unlocked") === "1") $("gate").classList.add("hidden");
     $("tabUser").onclick = () => {
       $("tabUser").classList.add("on"); $("tabTweet").classList.remove("on");
       userBox.classList.remove("hidden"); tweetBox.classList.add("hidden");
@@ -201,7 +209,6 @@
     $("q").addEventListener("keydown", (e) => { if (e.key === "Enter") checkUser(); });
     $("goTweet").onclick = checkTweet;
     $("tid").addEventListener("keydown", (e) => { if (e.key === "Enter") checkTweet(); });
-
     function esc(s) {
       return String(s || "").replace(/[&<>"']/g, (c) => ({
         "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
@@ -233,23 +240,15 @@
           html += '<a class="btn" style="background:#222;color:#fff;margin-top:8px" href="https://x.com/' + esc(p.handle) + '">Open current profile</a></div>';
         }
         html += '<div class="card"><b>Old usernames</b>';
-        if (!data.history.length) {
-          html += '<p class="muted">No public archive yet. Save the User ID above.</p>';
-        } else {
-          data.history.forEach((h) => {
-            html += '<div class="name-row"><span>@' + esc(h.handle) + "</span><span class='muted'>" + esc((h.dates || []).join(" → ")) + "</span></div>";
-          });
-        }
+        if (!data.history.length) html += '<p class="muted">No public archive yet. Save the User ID above.</p>';
+        else data.history.forEach((h) => {
+          html += '<div class="name-row"><span>@' + esc(h.handle) + "</span><span class='muted'>" + esc((h.dates || []).join(" → ")) + "</span></div>";
+        });
         html += "</div>";
         out.innerHTML = html;
       } catch (e) {
-        out.innerHTML = '<div class="err">Network error. Deploy to Vercel first, then retry.</div>';
+        out.innerHTML = '<div class="err">Network error. Try again.</div>';
       }
-    }
-    function parseTweetId(raw) {
-      const s = raw.trim();
-      const m = s.match(/status\/(\d+)/) || s.match(/^(\d{5,25})$/);
-      return m ? m[1] : "";
     }
     async function checkTweet() {
       const id = parseTweetId($("tid").value);
